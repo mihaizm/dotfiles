@@ -1,0 +1,243 @@
+#
+# wm independent hotkeys
+#
+
+super + Return
+	xfce4-terminal
+
+super + f
+#	xfce4-terminal --command vifm
+#	nautilus
+	thunar
+
+super + w
+	firefox
+
+super + e
+	mousepad
+
+super + v
+	gvim
+
+super + space
+	xfce4-popup-whiskermenu
+
+super + l
+	[ -f ~/.fehbg ] && convert $(grep -o "'.*'" ~/.fehbg | tr -d "'") -blur 0x7 RGB:- | i3lock --raw 1920x1080:rgb --image /dev/stdin || i3lock -c 000000
+#	xflock4
+
+super + m
+	systemctl poweroff
+
+# program launcher
+ctrl + Escape
+	rofi -show run
+
+# make sxhkd reload its configuration files:
+super + Escape
+	pkill -USR1 -x sxhkd
+
+#
+# bspwm hotkeys
+#
+
+# quit/restart bspwm
+super + alt + {q,r}
+	bspc {quit,wm -r}
+
+# close and kill
+#super + {_,shift + }w
+#	bspc node -{c,k}
+super + c
+	bspc node -c
+
+# alternate between the tiled and monocle layout
+super + a
+	bspc desktop -l next
+
+# send the newest marked node to the newest preselected node
+super + y
+	bspc node newest.marked.local -n newest.!automatic.local
+
+# swap the current node and the biggest window
+super + g
+	bspc node -s biggest.window.local
+
+#
+# state/flags
+#
+
+# set the window state
+super + {t,s}
+	bspc node -t {tiled,floating}
+
+# alternate between pseudo_tiled and tiled states
+super + q
+	[ -n "$(bspc query -N -n focused.pseudo_tiled)" ] && bspc node -t tiled || bspc node -t pseudo_tiled
+
+# set the node flags
+super + ctrl + {m,x,y,z}
+	bspc node -g {marked,locked,sticky,private}
+
+#
+# focus/swap
+#
+
+# focus the node in the given direction
+#super + {_,shift + }{h,j,k,l}
+#	bspc node -{f,s} {west,south,north,east}
+
+# focus the node for the given path jump
+super + {p,b,comma,period}
+	bspc node -f @{parent,brother,first,second}
+
+# focus the next/previous window in the current desktop
+#super + {_,shift + }c
+alt + Tab
+#	bspc node -f {next,prev}.local.!hidden.window
+	bspc node -f next.local.!hidden.window
+
+# focus the next/previous desktop in the current monitor
+super + bracket{left,right}
+	bspc desktop -f {prev,next}.local
+
+# focus the last node/desktop
+super + {grave,Tab}
+	bspc {node,desktop} -f last
+
+# focus the older or newer node in the focus history
+super + {o,i}
+	bspc wm -h off; \
+	bspc node {older,newer} -f; \
+	bspc wm -h on
+
+# focus or send to the given desktop
+super + {1-9}
+	bspc desktop -f '^{1-9}'
+
+super + shift + {1-9}
+	bspc node -d '^{1-9}' --follow
+
+# rotate tree rooted at parent node
+super + r
+	bspc node @parent -R 90
+
+#
+# preselect
+#
+
+# preselect the direction
+super + ctrl + {h,j,k,l}
+	bspc node -p {west,south,north,east}
+
+ctrl + alt + {h,j,k,l}
+	bspc node -f @parent; \
+	bspc node -p {west,south,north,east}
+
+# preselect the ratio
+super + ctrl + {1-9}
+	bspc node -o 0.{1-9}
+
+# cancel the preselection for the focused node
+super + ctrl + space
+	bspc node -p cancel
+
+# cancel the preselection for the focused desktop
+super + ctrl + shift + space
+	bspc query -N -d | xargs -I id -n 1 bspc node id -p cancel
+
+# resize gaps
+ctrl + minus
+	g="bspc config window_gap"; \
+	[ "$(eval $g)" -gt 0 ] && eval "$g $[$(eval $g)-5]"
+
+ctrl + equal
+	g="bspc config window_gap"; \
+	eval "$g $[$(eval $g)+5]"
+
+# toggle gap size between value set in config and 0
+ctrl + 0
+	g="bspc config window_gap"; \
+	[ "$(eval $g)" -eq 0 ] && eval "$g $(sed -En 's/.*window_gap[^0-9]*([0-9][0-9]*)$/\1/p' ~/.config/bspwm/bspwmrc)" || eval "$g 0"
+
+# adjust border width
+ctrl + super + minus
+	b="bspc config border_width"; \
+	[ $(eval $b) -gt 0 ] && eval "$b $[$(eval $b)-1]"
+
+ctrl + super + equal
+	b="bspc config border_width"; \
+	eval "$b $[$(eval $b)+1]"
+
+# toggle border width between value set in config and 0
+ctrl + super + 0
+	b="bspc config border_width"; \
+	[ "$(eval $b)" -eq 0 ] && eval "$b $(sed -En 's/.*border_width[^0-9]*([0-9][0-9]*)$/\1/p' ~/.config/bspwm/bspwmrc)" || eval "$b 0"
+
+# balance ratios for tree rooted at selected node
+super + 0
+	bspc node -B
+
+# insert receptacle
+super + alt + i
+	bspc node -i
+
+# remove receptacles from current desktop
+super + alt + o
+	r="$(bspc query -N -d -n '.leaf.!window' | head -n 1)"; \
+	[ -n "$r" ] && bspc node "$r" -k
+
+# swap with receptacle from current desktop
+super + alt + p
+	r="$(bspc query -N -d -n '.leaf.!window' | head -n 1)"; \
+	bspc node -s "$r"
+
+# replace receptacle from any desktop
+super + alt + u
+	r="$(bspc query -N -n '.leaf.!window' | head -n 1)"; \
+	bspc node -n "$r"
+
+# replace window with receptacle
+super + x
+	bspc node -c && bspc node -i
+
+# move all windows to last desktop and back
+super + d
+	last=$(bspc query -D | tail -n 1); \
+	current=$(bspc query -D -d); \
+	[ -z "$(bspc query -N -d $last)" ] && for i in $(bspc query -N -d $current); do bspc node $i -d $last; done || for i in $(bspc query -N -d $last); do bspc node $i -d $current; done
+
+# move focused window to last desktop
+super + z
+	last=$(bspc query -D | tail -n 1); \
+	bspc node focused -d $last && bspc node -i
+
+#
+# move/resize
+#
+
+# expand a window by moving one of its side outward
+super + alt + {h,j,k,l}
+	bspc node -z {left -20 0,bottom 0 20,top 0 -20,right 20 0}
+
+# expand all sides
+super + alt + n
+	bspc node -z left -20 0; \
+	bspc node -z bottom 0 20; \
+	bspc node -z top 0 -20; \
+	bspc node -z right 20 0
+
+# contract a window by moving one of its side inward
+super + shift + {h,j,k,l}
+	bspc node -z {right -20 0,top 0 20,bottom 0 -20,left 20 0}
+
+# contract all sides
+super + alt + b
+	bspc node -z left 20 0; \
+	bspc node -z bottom 0 -20; \
+	bspc node -z top 0 20; \
+	bspc node -z right -20 0
+
+# move a floating window
+super + {Left,Down,Up,Right}
+	bspc node -v {-20 0,0 20,0 -20,20 0}
